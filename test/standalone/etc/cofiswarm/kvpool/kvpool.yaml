@@ -1,0 +1,5 @@
+enabled: false
+pressure_threshold: 0.75
+divergence_threshold: 0.6
+proactive_threshold: 0.60
+proactive_fraction: 0.30
