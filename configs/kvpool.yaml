@@ -1,0 +1,13 @@
+# Armed KV policy (report moves #2/#3): auto-clear enabled with proactive eviction at
+# 0.60, plus per-server-group token budgets.
+enabled: true
+pressure_threshold: 0.75      # full clear at/above this KV pressure
+divergence_threshold: 0.6     # topic-switch distance that triggers a full clear
+proactive_threshold: 0.60     # partial eviction fires here, before full clear
+proactive_fraction: 0.30      # evict bottom 30% of slots by importance
+
+# Per-run KV token budget per server_group (≈ ctx_cap ÷ parallel slots).
+# 0 / absent = unbudgeted. Tune to actual slot counts.
+budgets:
+  llama8b: 3072   # ctx_cap 15360 ÷ 5 slots
+  coder7b: 3072   # ctx_cap 6144 ÷ 2 slots

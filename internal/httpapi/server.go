@@ -13,8 +13,8 @@ type Server struct {
 	cfg policy.Config
 }
 
-func New() *Server {
-	return &Server{cfg: policy.Default()}
+func New(cfg policy.Config) *Server {
+	return &Server{cfg: cfg}
 }
 
 func (s *Server) Handler() http.Handler {
@@ -41,6 +41,20 @@ func (s *Server) Handler() http.Handler {
 		s.mu.RLock()
 		defer s.mu.RUnlock()
 		_ = json.NewEncoder(w).Encode(s.cfg.Evaluate(req))
+	})
+	mux.HandleFunc("/v1/admit", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "POST only", http.StatusMethodNotAllowed)
+			return
+		}
+		var req policy.AdmitRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+		_ = json.NewEncoder(w).Encode(s.cfg.Admit(req))
 	})
 	return mux
 }
