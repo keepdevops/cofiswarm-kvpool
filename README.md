@@ -2,7 +2,7 @@
 
 KV cache policy: auto-clear thresholds, proactive eviction, token budget (ported from coordinator).
 
-- Migration: Sprint 6 in [MIGRATION-SPRINTS](https://github.com/keepdevops/cofiswarmdev/blob/main/docs/MIGRATION-SPRINTS.md)
+- Migration: Sprint 6 in [MIGRATION-SPRINTS](https://github.com/keepdevops/cofiswarm-docs/blob/main/MIGRATION-SPRINTS.md)
 - Legacy C++ reference: `legacy/cpp/` (`kv_auto_clear.h`, `token_ledger`, etc.)
 
 ## Policy defaults (from `kv_auto_clear.h`)
