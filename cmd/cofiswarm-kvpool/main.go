@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"log"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"github.com/keepdevops/cofiswarm-kvpool/internal/bus"
 	"github.com/keepdevops/cofiswarm-kvpool/internal/httpapi"
 	"github.com/keepdevops/cofiswarm-kvpool/internal/policy"
+	"github.com/keepdevops/cofiswarm-observer-sdk/pkg/buspresence"
 	"github.com/keepdevops/cofiswarm-observer-sdk/pkg/servicecomponent"
 )
 
@@ -39,9 +41,29 @@ func main() {
 		return
 	}
 
+	// Carrier presence (broker-free, default-off via COFISWARM_BRIDGE_URL): appear in the
+	// observer live roster over the zmq-bridge without needing a NATS broker.
+	stopPresence := buspresence.StartPresence(os.Getenv("COFISWARM_BRIDGE_URL"), "kvpool", map[string]any{"name": "kvpool"})
+	defer stopPresence()
+
 	log.Printf("kvpool listening on %s (enabled=%v proactive=%.2f budgets=%d)",
 		*addr, cfg.Enabled, cfg.ProactiveThreshold, len(cfg.Budgets))
-	log.Fatal(http.ListenAndServe(*addr, httpapi.New(cfg).Handler()))
+
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	httpSrv := &http.Server{Addr: *addr, Handler: httpapi.New(cfg).Handler()}
+	go func() {
+		if err := httpSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("kvpool http serve: %v", err)
+		}
+	}()
+
+	<-ctx.Done()
+	log.Print("kvpool stopping")
+	if err := httpSrv.Shutdown(context.Background()); err != nil {
+		log.Printf("kvpool http shutdown: %v", err)
+	}
 }
 
 func serveBus(url string, cfg policy.Config) {
